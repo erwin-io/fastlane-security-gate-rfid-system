@@ -1,0 +1,37 @@
+|-- .gitignore
+|-- app
+    |-- app_export_node_20260917_145933.txt
+    |-- models
+        |-- User.js
+    |-- package-lock.json
+    |-- package.json
+    |-- public
+        |-- app.js
+        |-- index.html
+        |-- style.css
+    |-- routes
+        |-- users.js
+    |-- server.js
+|-- LICENSE
+|-- machine
+    |-- boot.py
+    |-- components
+        |-- buzzer.py
+        |-- ds3231.py
+        |-- rdm6300.py
+        |-- rfid.py
+        |-- sdcard.py
+        |-- solenoid.py
+        |-- tb6600.py
+        |-- w5500.py
+        |-- webserver.py
+        |-- ws2812b.py
+        |-- __init__.py
+    |-- config.py
+    |-- machine_export_python_20260925_031319.txt
+    |-- main.py
+    |-- README.txt
+    |-- sdcard.py
+    |-- webui.html
+    |-- WIRING_AND_SETUP.txt
+|-- README.md

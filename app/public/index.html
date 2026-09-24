@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Fastlane RFID Access
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="/style.css"
+  >
+
+</head>
+
+<body class="state-idle">
+
+  <main class="screen">
+
+    <!-- ================================================== -->
+    <!-- TOP BAR -->
+    <!-- ================================================== -->
+
+    <header class="topbar">
+
+      <div class="brand">
+
+        <div class="brand-mark">
+          F
+        </div>
+
+        <div>
+
+          <div class="brand-name">
+            FASTLANE
+          </div>
+
+          <div class="brand-subtitle">
+            RFID ACCESS CONTROL
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="connectionBadge"
+        class="connection offline"
+      >
+
+        <span
+          class="connection-dot"
+        ></span>
+
+        <span
+          id="connectionText"
+        >
+          CONNECTING
+        </span>
+
+      </div>
+
+    </header>
+
+
+    <!-- ================================================== -->
+    <!-- CONTENT -->
+    <!-- ================================================== -->
+
+    <section class="content">
+
+
+      <!-- ================================================ -->
+      <!-- IDLE -->
+      <!-- ================================================ -->
+
+      <section
+        id="idleView"
+        class="view active"
+      >
+
+        <div class="idle-content">
+
+          <div class="idle-copy">
+
+            <div class="entry-pill">
+              ENTRY
+            </div>
+
+            <div class="eyebrow">
+              PLEASE
+            </div>
+
+            <h1>
+              TAP<br>
+              YOUR CARD
+            </h1>
+
+            <p>
+              Hold your RFID card near the reader
+            </p>
+
+          </div>
+
+
+          <div class="reader-visual">
+
+            <div class="reader-ring ring-outer"></div>
+
+            <div class="reader-ring ring-middle"></div>
+
+            <div class="reader-ring ring-inner"></div>
+
+
+            <div class="card">
+
+              <div class="card-chip"></div>
+
+              <div class="card-lines">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================ -->
+      <!-- RESULT -->
+      <!-- ================================================ -->
+
+      <section
+        id="resultView"
+        class="view"
+      >
+
+        <div class="result-shell">
+
+          <div
+            id="resultTitle"
+            class="result-title"
+          >
+            GRANTED
+          </div>
+
+
+          <div class="identity-row">
+
+            <div class="avatar-wrap">
+
+              <img
+                id="profileImage"
+                class="avatar hidden"
+                alt="Profile"
+              >
+
+              <div
+                id="profileFallback"
+                class="avatar avatar-fallback"
+              >
+                ?
+              </div>
+
+            </div>
+
+
+            <div class="identity-copy">
+
+              <div
+                id="personName"
+                class="person-name"
+              >
+                User
+              </div>
+
+
+              <div
+                id="personDepartment"
+                class="person-meta department"
+              >
+              </div>
+
+
+              <div
+                id="personEmail"
+                class="person-meta email"
+              >
+              </div>
+
+
+              <div
+                id="reasonText"
+                class="reason"
+              >
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </section>
+
+
+    <!-- ================================================== -->
+    <!-- FOOTER -->
+    <!-- ================================================== -->
+
+    <footer class="footer">
+
+      <div>
+        FASTLANE SECURITY GATE
+      </div>
+
+      <div id="clock">
+        --:--:--
+      </div>
+
+    </footer>
+
+  </main>
+
+
+  <script src="/app.js"></script>
+
+</body>
+</html>

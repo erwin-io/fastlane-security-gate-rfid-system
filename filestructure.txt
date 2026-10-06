@@ -1,37 +1,49 @@
 |-- .gitignore
-|-- app
-    |-- app_export_node_20260917_145933.txt
-    |-- models
-        |-- User.js
-    |-- package-lock.json
-    |-- package.json
-    |-- public
-        |-- app.js
-        |-- index.html
-        |-- style.css
-    |-- routes
-        |-- users.js
-    |-- server.js
 |-- LICENSE
 |-- machine
     |-- boot.py
     |-- components
         |-- buzzer.py
+        |-- card_id.py
         |-- ds3231.py
+        |-- manual_button.py
+        |-- presence_contract.py
         |-- rdm6300.py
         |-- rfid.py
         |-- sdcard.py
         |-- solenoid.py
+        |-- tap_client.py
+        |-- tap_notify.py
         |-- tb6600.py
+        |-- vl53l0x.py
         |-- w5500.py
         |-- webserver.py
         |-- ws2812b.py
         |-- __init__.py
+        |-- __pycache__
+            |-- card_id.cpython-310.pyc
+            |-- rdm6300.cpython-310.pyc
+            |-- rfid.cpython-310.pyc
+            |-- sdcard.cpython-310.pyc
+            |-- tap_notify.cpython-310.pyc
+            |-- vl53l0x.cpython-310.pyc
+            |-- __init__.cpython-310.pyc
     |-- config.py
-    |-- machine_export_python_20260925_031319.txt
     |-- main.py
+    |-- monitor_esp32.bat
     |-- README.txt
-    |-- sdcard.py
+    |-- tools
+        |-- presence_calibrate.py
+        |-- presence_collect.py
+        |-- presence_sensor_pair.py
+        |-- presence_validate_calibration.py
+        |-- __init__.py
+        |-- __pycache__
+            |-- presence_calibrate.cpython-313.pyc
+            |-- presence_collect.cpython-313.pyc
+            |-- presence_sensor_pair.cpython-313.pyc
+            |-- __init__.cpython-313.pyc
+    |-- upload_to_esp32.bat
     |-- webui.html
     |-- WIRING_AND_SETUP.txt
 |-- README.md

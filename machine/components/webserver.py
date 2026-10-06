@@ -34,6 +34,8 @@ class CooperativeWebServer:
         self.server = None
         self.ready = False
         self.bind_ip = ""
+        # v2.4.1: extra non-blocking listeners (W5500 hardware sockets)
+        self.listeners = []
 
         self.client = None
         self.client_address = None
@@ -52,10 +54,17 @@ class CooperativeWebServer:
         self.file_done = False
         self.response_active = False
 
+        # v2.0.0: a fully received request may be held (not routed) while the
+        # motors move, so route handlers never run between RMT refills.
+        self.dispatch_pending = False
+        self.dispatch_pending_since = 0
+        self.max_dispatch_defer_ms = 4000
+
     @staticmethod
     def status_reason(code):
         reasons = {
             200: "OK",
+            503: "Service Unavailable",
             204: "No Content",
             400: "Bad Request",
             404: "Not Found",
@@ -103,6 +112,8 @@ class CooperativeWebServer:
         self.send_offset = 0
         self.response_active = False
         self.file_done = False
+        self.dispatch_pending = False
+        self.dispatch_pending_since = 0
 
         if self.file_handle is not None:
             try:
@@ -121,8 +132,18 @@ class CooperativeWebServer:
         self.client_address = None
         self._reset_client_state()
 
+    def add_listener(self, listener):
+        """Accept clients from another listener (e.g. the W5500 web port)."""
+        self.listeners.append(listener)
+
     def close(self):
         self._close_client()
+        for listener in self.listeners:
+            try:
+                listener.close()
+            except Exception:
+                pass
+        self.listeners = []
         if self.server is not None:
             try:
                 self.server.close()
@@ -135,11 +156,19 @@ class CooperativeWebServer:
         if not self.ready or self.server is None or self.client is not None:
             return
 
+        client = None
         try:
             client, address = self.server.accept()
-        except OSError:
-            return
         except Exception:
+            client = None
+        if client is None:
+            for listener in self.listeners:
+                try:
+                    client, address = listener.accept()
+                    break
+                except Exception:
+                    client = None
+        if client is None:
             return
 
         self.client = client
@@ -303,7 +332,8 @@ class CooperativeWebServer:
 
         try:
             if self._request_complete():
-                self._dispatch_request()
+                self.dispatch_pending = True
+                self.dispatch_pending_since = time.ticks_ms()
         except Exception as e:
             self._prepare_body_response(
                 400,
@@ -365,8 +395,38 @@ class CooperativeWebServer:
         self.send_offset += sent
         self.last_activity_ms = time.ticks_ms()
 
-    def update(self):
-        """Service a tiny amount of HTTP work and immediately return."""
+    def _run_pending_dispatch(self, allow_dispatch):
+        if not self.dispatch_pending or self.response_active:
+            return
+        if not allow_dispatch:
+            # Keep the client alive while the request is held during motion.
+            now = time.ticks_ms()
+            self.last_activity_ms = now
+            if time.ticks_diff(now, self.dispatch_pending_since) < self.max_dispatch_defer_ms:
+                return
+            self.dispatch_pending = False
+            self._prepare_body_response(
+                503,
+                "application/json",
+                '{"ok":false,"error":"gate moving - retry"}',
+            )
+            return
+        self.dispatch_pending = False
+        try:
+            self._dispatch_request()
+        except Exception as e:
+            self._prepare_body_response(
+                500,
+                "application/json",
+                '{"ok":false,"error":"%s"}' % repr(e).replace('"', "'"),
+            )
+
+    def update(self, allow_dispatch=True):
+        """Service a tiny amount of HTTP work and immediately return.
+
+        allow_dispatch=False (motor moving): accept/receive/send continue, but
+        a newly completed request is not routed until motion ends.
+        """
         if not self.ready:
             return
 
@@ -376,6 +436,10 @@ class CooperativeWebServer:
 
         if time.ticks_diff(time.ticks_ms(), self.last_activity_ms) > self.client_timeout_ms:
             self._close_client()
+            return
+
+        if self.dispatch_pending:
+            self._run_pending_dispatch(allow_dispatch)
             return
 
         if self.response_active:

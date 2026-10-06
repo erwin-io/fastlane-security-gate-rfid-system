@@ -1,210 +1,520 @@
-FASTLANE ONE-WAY ENTRANCE RFID GATE - MODULAR BUILD 1.3.0
-ESP32-S3 + RDM6300 + WS2812B + DS3231 + MicroSD + W5500 + TB6600 + 2x NEMA17 + SOLENOID RELAY + BUZZER
+FASTLANE ONE-WAY ENTRANCE RFID GATE - WIRING AND SETUP v1.7.2
+ESP32-S3 + 1x ULN2003A + 2x TB6600 + 2x NEMA17
 
 ============================================================
-PROJECT STRUCTURE
+1. MOTOR CONTROL - ONE ULN2003A, TWO TB6600
 ============================================================
 
-/boot.py
-/config.py
-/main.py
-/webui.html
-/components/__init__.py
-/components/tb6600.py
-/components/w5500.py
-/components/ds3231.py
-/components/sdcard.py
-/components/rdm6300.py
-/components/ws2812b.py
-/components/rfid.py
-/components/solenoid.py
-/components/buzzer.py
+DRIVER #1 / LEFT BARRIER
 
-main.py = application/orchestration only.
-Hardware/component code is separated under /components so each device can be
-updated independently later.
+ESP32-S3 GPIO1
+-> ULN2003A IN1
+-> ULN2003A OUT1
+-> TB6600 #1 PUL-
 
-============================================================
-TB6600 + TWO NEMA17
-============================================================
+ESP32-S3 GPIO2
+-> ULN2003A IN2
+-> ULN2003A OUT2
+-> TB6600 #1 DIR-
 
-ESP32-S3 5V -> TB6600 PUL+
-ESP32-S3 GPIO1 -> TB6600 PUL-
-ESP32-S3 5V -> TB6600 DIR+
-ESP32-S3 GPIO2 -> TB6600 DIR-
-TB6600 ENA+ -> NOT CONNECTED
-TB6600 ENA- -> NOT CONNECTED
+5V
+-> TB6600 #1 PUL+
 
-TB6600 SW1 -> OFF
-TB6600 SW2 -> ON
-TB6600 SW3 -> OFF
-TB6600 microstep -> 1/8
-TB6600 pulses/revolution -> 1600
+5V
+-> TB6600 #1 DIR+
 
-TB6600 SW4 -> ON
-TB6600 SW5 -> OFF
-TB6600 SW6 -> OFF
-TB6600 current setting -> 2.0 A
+TB6600 #1 ENA+
+-> NOT CONNECTED
 
-TB6600 A+ -> Motor 1 Wire 4 BLACK
-TB6600 A- -> Motor 1 Wire 2 GREEN
-TB6600 B+ -> Motor 1 Wire 3 RED
-TB6600 B- -> Motor 1 Wire 1 BLUE
+TB6600 #1 ENA-
+-> NOT CONNECTED
 
-TB6600 A+ -> Motor 2 Wire 2 GREEN
-TB6600 A- -> Motor 2 Wire 4 BLACK
-TB6600 B+ -> Motor 2 Wire 3 RED
-TB6600 B- -> Motor 2 Wire 1 BLUE
 
-Motor 2 has one coil pair reversed so it rotates opposite Motor 1 while both
-motors receive the same STEP/DIR signal from the single TB6600.
+DRIVER #2 / RIGHT BARRIER
 
-TB6600 V+ -> 12V PSU +
-TB6600 V- -> 12V PSU GND
+ESP32-S3 GPIO40
+-> ULN2003A IN3
+-> ULN2003A OUT3
+-> TB6600 #2 PUL-
 
-============================================================
-ESP32 GPIO -> COMPONENT WIRING
-============================================================
+ESP32-S3 GPIO41
+-> ULN2003A IN4
+-> ULN2003A OUT4
+-> TB6600 #2 DIR-
 
-ESP32 GPIO1 -> TB6600 PUL- / STEP
-ESP32 GPIO2 -> TB6600 DIR-
-ESP32 GPIO4 -> W5500 SCK
-ESP32 GPIO5 -> W5500 MOSI
-ESP32 GPIO6 -> W5500 MISO
-ESP32 GPIO7 -> W5500 CS
-ESP32 GPIO8 -> DS3231 SDA
-ESP32 GPIO9 -> DS3231 SCL
-ESP32 GPIO10 -> MicroSD CS
-ESP32 GPIO11 -> MicroSD MOSI
-ESP32 GPIO12 -> MicroSD SCK
-ESP32 GPIO13 -> MicroSD MISO
-ESP32 GPIO14 -> W5500 INT
-ESP32 GPIO15 -> Solenoid Relay IN
-ESP32 GPIO16 <- RDM6300 TX through voltage divider
-ESP32 GPIO17 -> Buzzer driver/module IN
-ESP32 GPIO18 -> WS2812B DIN through 330 ohm resistor
-ESP32 GPIO21 -> W5500 RST
-ESP32 GPIO47 -> RDM6300 UART TX dummy assignment only, NOT CONNECTED
+5V
+-> TB6600 #2 PUL+
+
+5V
+-> TB6600 #2 DIR+
+
+TB6600 #2 ENA+
+-> NOT CONNECTED
+
+TB6600 #2 ENA-
+-> NOT CONNECTED
+
+
+ULN2003A MODULE
+
+ULN2003A VDD / 5V
+-> 5V buck output
+
+ULN2003A GND
+-> common logic GND
+
+ESP32 GND
+-> same common logic GND
+
+IMPORTANT:
+ESP32 HIGH -> ULN2003A output sinks LOW.
+ESP32 LOW  -> ULN2003A output releases.
 
 ============================================================
-RDM6300
+2. NEMA17 MOTOR OUTPUT WIRING
 ============================================================
 
-RDM6300 VCC -> 5V
-RDM6300 GND -> Common GND
-RDM6300 TX -> 1k resistor -> ESP32 GPIO16
-ESP32 GPIO16 -> 2k resistor -> GND
-RDM6300 RX -> NOT CONNECTED
+Motor wire reference used by this machine:
+Pin 1 = BLUE
+Pin 2 = GREEN
+Pin 3 = RED
+Pin 4 = BLACK
+
+Coils:
+Coil A = BLACK + GREEN
+Coil B = RED + BLUE
+
+
+MOTOR #1 / LEFT -> TB6600 #1
+
+TB6600 #1 A+
+-> BLACK
+-> Motor Pin 4
+
+TB6600 #1 A-
+-> GREEN
+-> Motor Pin 2
+
+TB6600 #1 B+
+-> RED
+-> Motor Pin 3
+
+TB6600 #1 B-
+-> BLUE
+-> Motor Pin 1
+
+
+MOTOR #2 / RIGHT -> TB6600 #2
+
+TB6600 #2 A+
+-> BLACK
+-> Motor Pin 4
+
+TB6600 #2 A-
+-> GREEN
+-> Motor Pin 2
+
+TB6600 #2 B+
+-> RED
+-> Motor Pin 3
+
+TB6600 #2 B-
+-> BLUE
+-> Motor Pin 1
+
+IMPORTANT:
+Both motors are now wired IDENTICALLY.
+Do NOT swap BLACK/GREEN on Motor #2 anymore.
+Motor #2 opposite physical rotation is created by GPIO41 / TB6600 #2 DIR in software.
 
 ============================================================
-WS2812B 8x8
+3. TB6600 DIP SETTINGS - BOTH DRIVERS
 ============================================================
 
-WS2812B 5V -> 5V buck output
-WS2812B GND -> Common GND
-ESP32 GPIO18 -> 330 ohm resistor -> WS2812B DIN
+Use the exact current/microstep table printed on each TB6600 if it differs.
+Current project setting:
+
+SW1 = OFF
+SW2 = ON
+SW3 = OFF
+
+Microstep = 1/8
+Pulses per revolution = 1600
+
+SW4 = ON
+SW5 = OFF
+SW6 = OFF
+
+Current setting = approximately 2.0 A on the user's TB6600 units
+
+Configure BOTH TB6600 units the same.
 
 ============================================================
-DS3231
+4. MOTOR POWER
 ============================================================
 
-DS3231 VCC -> ESP32 3V3
-DS3231 GND -> Common GND
-DS3231 SDA -> ESP32 GPIO8
-DS3231 SCL -> ESP32 GPIO9
+Current prototype motor supply:
+
+Motor PSU +12V
+-> TB6600 #1 motor V+
+-> TB6600 #2 motor V+
+
+Motor PSU 0V / GND
+-> TB6600 #1 motor V-
+-> TB6600 #2 motor V-
+
+Do not connect both motors to one TB6600 motor output anymore.
+
+TB6600 #1 A+/A-/B+/B-
+-> Motor #1 only
+
+TB6600 #2 A+/A-/B+/B-
+-> Motor #2 only
+
+If changing to a higher motor-driver voltage later, verify the exact TB6600,
+NEMA17, PSU, relay, buck and other connected hardware ratings first.
 
 ============================================================
-MICROSD
+5. MASTER MECHANICAL LIMIT SWITCHES - LEFT / MOTOR #1
 ============================================================
 
-MicroSD CS -> ESP32 GPIO10
-MicroSD MOSI -> ESP32 GPIO11
-MicroSD SCK -> ESP32 GPIO12
-MicroSD MISO -> ESP32 GPIO13
-MicroSD GND -> Common GND
-MicroSD VCC -> module-appropriate supply
+CLOSED / LOCK LIMIT
 
-The existing patched SDCard driver is now stored unchanged as:
-/components/sdcard.py
+ESP32-S3 GPIO39
+-> one terminal of CLOSED mechanical switch
 
-============================================================
-W5500
-============================================================
+other switch terminal
+-> GND
 
-W5500 SCK -> ESP32 GPIO4
-W5500 MOSI -> ESP32 GPIO5
-W5500 MISO -> ESP32 GPIO6
-W5500 CS -> ESP32 GPIO7
-W5500 INT -> ESP32 GPIO14
-W5500 RST -> ESP32 GPIO21
-W5500 GND -> Common GND
-W5500 VCC -> 3.3V if the exact module is 3.3V-only
-W5500 VIN/5V -> 5V only if the exact breakout has a 5V/VIN regulator input
 
-============================================================
-SOLENOID RELAY
-============================================================
+OPEN / UNLOCK LIMIT
 
-ESP32 GPIO15 -> Relay IN
-Relay module VCC -> 5V
-Relay module GND -> Common GND
-12V PSU + -> Relay COM
-Relay NO -> Solenoid +
-Solenoid - -> 12V PSU GND
-Flyback diode stripe/cathode -> Solenoid +
-Flyback diode other side/anode -> Solenoid -
+ESP32-S3 GPIO42
+-> one terminal of OPEN mechanical switch
 
-Firmware relay assumption:
-GPIO15 LOW -> Relay OFF -> Solenoid unpowered -> LOCKED
-GPIO15 HIGH -> Relay ON -> Solenoid powered -> UNLOCKED
+other switch terminal
+-> GND
 
-On GRANTED:
-Relay unlocks immediately.
-Motor opening starts immediately.
-Relay returns to LOCK after 1000 ms by default.
-The relay does not wait for the motor to return.
-The mechanical lock re-catches when the barrier returns to CLOSED.
+Firmware uses internal pull-up:
+Switch released = HIGH
+Switch pressed  = LOW
 
-============================================================
-BUZZER
-============================================================
+GATE_LIMIT_ACTIVE_LOW = True
+GATE_LIMIT_DEBOUNCE_MS = 5
+GATE_REQUIRE_CLOSED_LIMIT_FOR_OPEN = False
+GATE_LIMIT_AUTO_ARM = True
 
-ESP32 GPIO17 -> Buzzer driver/module IN
-5V/12V buzzer supply -> External correct-voltage supply
-Buzzer/driver GND -> Common GND
+Startup / bench-test behavior:
+- If neither endpoint switch is active at boot, RFID operation is NOT blocked.
+- The gate keeps normal open-loop angle travel until either LEFT switch is seen.
+- After a LEFT endpoint switch is observed active, endpoint feedback auto-arms.
+- Strict CLOSED-limit-before-RFID behavior can be enabled later by setting
+  GATE_REQUIRE_CLOSED_LIMIT_FOR_OPEN = True after hardware verification.
 
-============================================================
-ESP32 POWER
-============================================================
+Endpoint seek settings:
+GATE_LIMIT_ENDPOINT_SEEK_ENABLED = True
+GATE_LIMIT_ENDPOINT_SEEK_DEGREES = 3.0
+GATE_LIMIT_ENDPOINT_SEEK_DELAY_US = 4000
 
-12V PSU + -> Buck converter IN+
-12V PSU GND -> Buck converter IN-
-Buck converter output -> approximately 5.0V
-Buck USB output -> USB cable -> ESP32-S3 USB power
-ESP32 external 5V/VIN header -> NOT CONNECTED when powering by buck USB
+IMPORTANT:
+The CLOSED switch is intentionally ignored during the special latch-release CLOSE
+preload because the gate is already sitting at the closed mechanical endpoint.
+
+During normal OPEN/CLOSE travel, the LEFT switch stops Motor #1 independently.
+Motor #2 continues its own calculated remaining steps.
+
+If the expected switch is not reached by the normal calculated endpoint, Motor #1
+alone moves up to 3 additional degrees slowly while searching for the switch.
+If the switch still does not activate, firmware enters ERROR.
+
+If both OPEN and CLOSED switches are active simultaneously, treat it as a wiring
+or mechanical fault.
+
+Recommended for long/noisy switch wiring:
+- twisted GPIO + GND pair
+- route away from NEMA phase wires and solenoid wires
+- optional external 4.7k-10k pull-up from GPIO to 3.3V
+- optional ~100nF capacitor from GPIO to GND
 
 ============================================================
-RFID ACCESS FLOW
+6. SOLENOID RELAY
 ============================================================
 
-RDM6300 reads card.
-RFID component checks SD-backed bucket database.
-DENIED -> Red X + denied buzzer pattern.
-GRANTED -> Green arrow + solenoid unlock pulse + TB6600 OPEN movement.
-Gate stays OPEN for configured gate_unlock_sec.
-TB6600 returns to CLOSED angle.
-Mechanical solenoid latch re-catches automatically.
+ESP32-S3 GPIO15
+-> relay control input
 
-Default CLOSED angle -> 0 degrees
-Default OPEN angle -> 90 degrees
-Default solenoid unlock pulse -> 1000 ms
-Default gate open hold -> 12 seconds
+FIXED REQUIREMENT:
+SOLENOID_RELAY_ACTIVE_LOW = True
+
+GPIO15 HIGH
+= relay OFF
+= solenoid unpowered
+= LOCKED
+
+GPIO15 LOW
+= relay ON
+= solenoid powered
+= UNLOCKED
+
+12V load/contact side:
+
+12V PSU +
+-> relay COM
+
+relay NO
+-> solenoid +
+
+solenoid -
+-> 12V PSU GND
+
+Use a flyback diode across the DC solenoid if the relay/module does not already
+provide appropriate suppression:
+Diode cathode/stripe -> solenoid +
+Diode anode          -> solenoid -
 
 ============================================================
-IMPORTANT MOTOR POSITION ASSUMPTION
+7. RDM6300 / MD0016 125KHZ RFID
 ============================================================
 
-There is currently no home/limit sensor.
-At ESP32 boot the firmware assumes the physical gate is already at the configured
-CLOSED angle. If the gate is moved while power is off or the motors skip steps,
-the software angle can become different from the real mechanical angle.
+RDM6300 TX
+-> ESP32-S3 GPIO16 RX
+
+RDM6300 GND
+-> common GND
+
+RDM6300 VCC
+-> module-rated supply
+
+UART:
+UART1
+9600 baud
+ESP32 TX = not assigned
+
+============================================================
+8. WS2812B 8x8 MATRIX
+============================================================
+
+ESP32-S3 GPIO18
+-> WS2812B DIN
+
+WS2812B GND
+-> common GND
+
+WS2812B supply
+-> regulated supply appropriate for the matrix
+
+Firmware orientation:
+SERPENTINE = True
+FLIP_X = False
+FLIP_Y = True
+
+============================================================
+9. DS3231 RTC
+============================================================
+
+ESP32-S3 GPIO8
+-> DS3231 SDA
+
+ESP32-S3 GPIO9
+-> DS3231 SCL
+
+ESP32-S3 3.3V
+-> DS3231 VCC for the current project module
+
+ESP32 GND
+-> DS3231 GND
+
+I2C address = 0x68
+
+============================================================
+10. DUAL VL53L0X
+============================================================
+
+Both sensors share I2C0 with DS3231.
+
+VL53L0X #1
+ESP32 3.3V -> VIN
+ESP32 GND  -> GND
+GPIO8      -> SDA
+GPIO9      -> SCL
+GPIO47     -> XSHUT
+
+VL53L0X #2
+ESP32 3.3V -> VIN
+ESP32 GND  -> GND
+GPIO8      -> SDA
+GPIO9      -> SCL
+GPIO48     -> XSHUT
+
+After initialization:
+Sensor #1 -> 0x30
+Sensor #2 -> 0x31
+DS3231    -> 0x68
+
+Default background calibration:
+Sensor #1 = 600 mm
+Sensor #2 = 600 mm
+
+============================================================
+11. MICROSD
+============================================================
+
+ESP32-S3 GPIO10
+-> SD CS
+
+ESP32-S3 GPIO11
+-> SD MOSI
+
+ESP32-S3 GPIO12
+-> SD SCK
+
+ESP32-S3 GPIO13
+-> SD MISO
+
+Use the supply voltage required by the exact SD module being used.
+
+============================================================
+12. W5500 ETHERNET
+============================================================
+
+ESP32-S3 GPIO4
+-> W5500 SCK
+
+ESP32-S3 GPIO5
+-> W5500 MOSI
+
+ESP32-S3 GPIO6
+-> W5500 MISO
+
+ESP32-S3 GPIO7
+-> W5500 CS
+
+ESP32-S3 GPIO14
+-> W5500 INT
+
+ESP32-S3 GPIO21
+-> W5500 RST
+
+ESP32 3.3V
+-> W5500 VCC for the current project module
+
+ESP32 GND
+-> W5500 GND
+
+Default Ethernet configuration:
+IP      = 192.168.50.2
+Subnet  = 255.255.255.0
+Gateway = 192.168.50.1
+DNS     = 192.168.50.1
+
+============================================================
+13. BUZZER
+============================================================
+
+ESP32-S3 GPIO17
+-> buzzer control input / transistor / MOSFET stage
+
+Do not power a high-current 5V/12V buzzer directly from the GPIO.
+
+============================================================
+14. COMPLETE GPIO MAP
+============================================================
+
+GPIO1  -> ULN IN1 -> OUT1 -> TB6600 #1 PUL-
+GPIO2  -> ULN IN2 -> OUT2 -> TB6600 #1 DIR-
+
+GPIO4  -> W5500 SCK
+GPIO5  -> W5500 MOSI
+GPIO6  -> W5500 MISO
+GPIO7  -> W5500 CS
+
+GPIO8  -> I2C SDA -> DS3231 + VL53L0X #1 + VL53L0X #2
+GPIO9  -> I2C SCL -> DS3231 + VL53L0X #1 + VL53L0X #2
+
+GPIO10 -> SD CS
+GPIO11 -> SD MOSI
+GPIO12 -> SD SCK
+GPIO13 -> SD MISO
+
+GPIO14 -> W5500 INT
+GPIO15 -> active-low solenoid relay
+GPIO16 -> RDM6300 TX -> ESP32 RX
+GPIO17 -> buzzer control
+GPIO18 -> WS2812B DIN
+GPIO21 -> W5500 RST
+
+GPIO39 -> LEFT CLOSED mechanical limit
+GPIO40 -> ULN IN3 -> OUT3 -> TB6600 #2 PUL-
+GPIO41 -> ULN IN4 -> OUT4 -> TB6600 #2 DIR-
+GPIO42 -> LEFT OPEN mechanical limit
+
+GPIO47 -> VL53L0X #1 XSHUT
+GPIO48 -> VL53L0X #2 XSHUT
+
+============================================================
+15. MOTOR SOFTWARE SETTINGS
+============================================================
+
+TB6600_1_STEP_PIN = 1
+TB6600_1_DIR_PIN  = 2
+TB6600_2_STEP_PIN = 40
+TB6600_2_DIR_PIN  = 41
+
+TB6600_MOTOR2_OPPOSITE = True
+
+TB6600_MICROSTEP = 8
+TB6600_STEPS_PER_REV = 1600
+TB6600_START_DELAY_US = 1750
+TB6600_RUN_DELAY_US = 630
+TB6600_ACCEL_STEPS = 80
+
+Motor #1 and Motor #2 use independent logical position counters in v1.7.1.
+
+============================================================
+16. LATCH-RELEASE SEQUENCE
+============================================================
+
+RFID GRANTED
+-> solenoid unlocks immediately
+-> wait 1000 ms default
+-> both motors perform slow 3-degree CLOSE-direction preload
+-> preload half-pulse delay = 6500 us
+-> hold preload / solenoid released = 350 ms
+-> software position re-anchors to CLOSED
+-> both motors start normal fast OPEN travel
+
+This special preload intentionally ignores the CLOSED limit switch.
+
+============================================================
+17. NORMAL ENDPOINT SEQUENCE
+============================================================
+
+OPEN:
+- Motor #1 and Motor #2 start together.
+- Their physical shaft directions are opposite.
+- Their logical gate direction is the same: OPEN.
+- LEFT OPEN switch stops Motor #1 only.
+- Motor #2 finishes its own calculated remaining pulses.
+- If LEFT OPEN switch was missed, Motor #1-only endpoint seek runs.
+
+CLOSE:
+- VL53L0X must report safe/clear.
+- Motor #1 and Motor #2 close together.
+- LEFT CLOSED switch stops Motor #1 only.
+- Motor #2 finishes its own calculated remaining pulses.
+- If LEFT CLOSED switch was missed, Motor #1-only endpoint seek runs.
+- Solenoid is forced to LOCKED/OFF at the completed CLOSED endpoint.
+
+============================================================
+18. KNOWN LIMITATION
+============================================================
+
+Only LEFT/Motor #1 currently has endpoint switches.
+RIGHT/Motor #2 still uses commanded pulse count as its position estimate.
+
+For true independent physical confirmation of both leaves, add RIGHT OPEN/CLOSED
+switches or an encoder later.
+
+============================================================
+END
+============================================================

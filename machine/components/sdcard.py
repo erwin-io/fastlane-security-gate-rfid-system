@@ -25,6 +25,14 @@ import time
 
 
 _CMD_TIMEOUT = const(100)
+_WRITE_BUSY_TIMEOUT_MS = const(750)
+# v2.3.0 read hardening (FASTLANE): the data token is waited for with a time
+# deadline instead of 100 polls, and a failed block read is retried after
+# draining the card. On 05 Oct 2026 one "timeout waiting for response" left
+# the card out of step and EVERY later read failed until a remount, which
+# made the web UI's card list come back empty.
+_READ_TOKEN_TIMEOUT_MS = const(300)
+_READ_RETRIES = const(3)
 
 _R1_IDLE_STATE = const(1 << 0)
 # R1_ERASE_RESET = const(1 << 1)
@@ -219,15 +227,26 @@ class SDCard:
     def readinto(self, buf):
         self.cs(0)
 
-        # read until start byte (0xff)
-        for i in range(_CMD_TIMEOUT):
+        # read until the data start token, with a hard time deadline
+        deadline = time.ticks_add(time.ticks_ms(), _READ_TOKEN_TIMEOUT_MS)
+        polls = 0
+        while True:
             self.spi.readinto(self.tokenbuf, 0xFF)
-            if self.tokenbuf[0] == _TOKEN_DATA:
+            token = self.tokenbuf[0]
+            if token == _TOKEN_DATA:
                 break
-            time.sleep_ms(1)
-        else:
-            self.cs(1)
-            raise OSError("timeout waiting for response")
+            if token != 0xFF and not (token & 0xF0):
+                # data error token (0000xxxx): card refused the read
+                self.cs(1)
+                self.spi.write(b"\xff")
+                raise OSError(5)  # EIO
+            if time.ticks_diff(time.ticks_ms(), deadline) >= 0:
+                self.cs(1)
+                self.spi.write(b"\xff")
+                raise OSError("timeout waiting for response")
+            polls += 1
+            if polls > 8:
+                time.sleep_ms(1)
 
         # read data
         mv = self.dummybuf_memoryview
@@ -241,6 +260,33 @@ class SDCard:
 
         self.cs(1)
         self.spi.write(b"\xff")
+
+    def _wait_not_busy(self, timeout_ms=_WRITE_BUSY_TIMEOUT_MS):
+        """Wait for the SD busy token with a hard deadline.
+
+        The stock MicroPython driver uses an unbounded while-loop here. If a
+        card/module remains busy or MISO is stuck LOW, that loop owns the VM
+        forever and looks exactly like a frozen ESP32.
+        """
+        deadline = time.ticks_add(
+            time.ticks_ms(),
+            int(timeout_ms),
+        )
+
+        while self.spi.read(1, 0xFF)[0] == 0x00:
+            if time.ticks_diff(
+                time.ticks_ms(),
+                deadline,
+            ) >= 0:
+                raise OSError(
+                    "SD write busy timeout after {} ms".format(
+                        timeout_ms
+                    )
+                )
+            time.sleep_ms(1)
+
+        return True
+
 
     def write(self, token, buf):
         self.cs(0)
@@ -257,25 +303,60 @@ class SDCard:
             self.spi.write(b"\xff")
             return
 
-        # wait for write to finish
-        while self.spi.read(1, 0xFF)[0] == 0:
-            pass
-
-        self.cs(1)
-        self.spi.write(b"\xff")
+        # wait for write to finish with a HARD deadline
+        try:
+            self._wait_not_busy()
+        finally:
+            self.cs(1)
+            self.spi.write(b"\xff")
 
     def write_token(self, token):
         self.cs(0)
         self.spi.read(1, token)
         self.spi.write(b"\xff")
-        # wait for write to finish
-        while self.spi.read(1, 0xFF)[0] == 0x00:
-            pass
+        # wait for write to finish with a HARD deadline
+        try:
+            self._wait_not_busy()
+        finally:
+            self.cs(1)
+            self.spi.write(b"\xff")
 
-        self.cs(1)
-        self.spi.write(b"\xff")
+    def _resync(self):
+        """Drain whatever the card may still be sending after a failed read
+        and leave the bus idle, so the next command starts in step."""
+        try:
+            self.cs(1)
+            self.spi.write(b"\xff")
+            self.cs(0)
+            junk = getattr(self, "_junk", None)
+            if junk is None:
+                junk = self._junk = bytearray(64)
+            for _ in range(9):          # > one 512-byte block + CRC
+                self.spi.readinto(junk, 0xFF)
+            self.cs(1)
+            self.spi.write(self.dummybuf_memoryview[:16])
+        except Exception:
+            try:
+                self.cs(1)
+            except Exception:
+                pass
 
     def readblocks(self, block_num, buf):
+        last = None
+        for attempt in range(_READ_RETRIES):
+            try:
+                return self._readblocks_once(block_num, buf)
+            except OSError as e:
+                last = e
+                if len(buf) > 512:
+                    try:
+                        self.cmd(12, 0, skip1=True)   # stop a CMD18 stream
+                    except Exception:
+                        pass
+                self._resync()
+        raise last
+
+    def _readblocks_once(self, block_num, buf):
         # workaround for shared bus, required for (at least) some Kingston
         # devices, ensure MOSI is high before starting transaction
         self.spi.write(b"\xff")

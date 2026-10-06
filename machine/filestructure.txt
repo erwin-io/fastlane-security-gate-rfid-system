@@ -2,19 +2,32 @@
 |-- components
     |-- buzzer.py
     |-- ds3231.py
+    |-- presence_contract.py
     |-- rdm6300.py
     |-- rfid.py
     |-- sdcard.py
     |-- solenoid.py
     |-- tb6600.py
+    |-- vl53l0x.py
     |-- w5500.py
     |-- webserver.py
     |-- ws2812b.py
     |-- __init__.py
 |-- config.py
-|-- machine_export_python_20260925_031319.txt
+|-- machine_export_python_20261001_075113.txt
 |-- main.py
 |-- README.txt
 |-- sdcard.py
+|-- tools
+    |-- presence_calibrate.py
+    |-- presence_collect.py
+    |-- presence_sensor_pair.py
+    |-- presence_validate_calibration.py
+    |-- __init__.py
+    |-- __pycache__
+        |-- presence_calibrate.cpython-313.pyc
+        |-- presence_collect.cpython-313.pyc
+        |-- presence_sensor_pair.cpython-313.pyc
+        |-- __init__.cpython-313.pyc
 |-- webui.html
 |-- WIRING_AND_SETUP.txt

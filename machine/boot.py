@@ -6,19 +6,20 @@
 # LOCKED/OFF state immediately so the solenoid cannot remain
 # energized while the rest of the application is importing.
 #
-# IMPORTANT HARDWARE ASSUMPTION:
-#   Relay module = ACTIVE HIGH
-#   GPIO15 LOW   = relay OFF = solenoid unpowered = LOCKED
-#   GPIO15 HIGH  = relay ON  = solenoid powered   = UNLOCKED
+# IMPORTANT HARDWARE ASSUMPTION - FIXED FOR THIS MACHINE:
+#   Relay module = ACTIVE LOW
+#   GPIO15 HIGH  = relay OFF = solenoid unpowered = LOCKED
+#   GPIO15 LOW   = relay ON  = solenoid powered   = UNLOCKED
 #
-# Keep these values synchronized with config.py.
+# Keep these values synchronized with config.py:
+#   SOLENOID_RELAY_ACTIVE_LOW = True
 # ============================================================
 
 from machine import Pin
 import gc
 
 BOOT_SOLENOID_RELAY_PIN = 15
-BOOT_RELAY_LOCKED_LEVEL = 0
+BOOT_RELAY_LOCKED_LEVEL = 1
 
 # Set the fail-safe output before doing diagnostics or importing main.py.
 _boot_solenoid_relay = Pin(

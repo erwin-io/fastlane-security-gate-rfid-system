@@ -44,6 +44,7 @@ class DS3231Clock:
         initial_datetime=(2026, 9, 17, 4, 30, 0),
         resync_ms=60000,
         nvs_namespace="gateclock",
+        i2c=None,
     ):
         self.sda_pin = sda_pin
         self.scl_pin = scl_pin
@@ -54,7 +55,9 @@ class DS3231Clock:
         self.resync_ms = int(resync_ms)
         self.nvs_namespace = nvs_namespace
 
-        self.i2c = None
+        # Optional shared I2C bus. FASTLANE v1.6 shares I2C0 between
+        # DS3231 and the two VL53L0X sensors.
+        self.i2c = i2c
         self.machine_rtc = RTC()
         self.nvs = esp32.NVS(nvs_namespace)
         self.ready = False
@@ -167,12 +170,13 @@ class DS3231Clock:
         print("CHECKING DS3231 RTC")
         print("========================================")
 
-        self.i2c = I2C(
-            0,
-            sda=Pin(self.sda_pin),
-            scl=Pin(self.scl_pin),
-            freq=self.frequency,
-        )
+        if self.i2c is None:
+            self.i2c = I2C(
+                0,
+                sda=Pin(self.sda_pin),
+                scl=Pin(self.scl_pin),
+                freq=self.frequency,
+            )
 
         try:
             devices = self.i2c.scan()
